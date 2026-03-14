@@ -44,6 +44,20 @@ const schemas = {
     unit: Joi.string().max(50).default('pcs')
   }),
 
+  // Stock update validation
+  stockUpdate: Joi.object({
+    quantity: Joi.number().integer().min(0).required().messages({
+      'number.base': 'Quantity must be a number',
+      'number.integer': 'Quantity must be an integer',
+      'number.min': 'Quantity cannot be negative',
+      'any.required': 'Quantity is required'
+    }),
+    adjustment_reason: Joi.string().min(2).max(255).required().messages({
+      'string.empty': 'Adjustment reason is required',
+      'string.min': 'Adjustment reason must be at least 2 characters'
+    })
+  }),
+
   // Warehouse validation
   warehouse: Joi.object({
     name: Joi.string().min(2).max(255).required().messages({

@@ -103,6 +103,15 @@ export const updateStock = async (req, res) => {
     const { id } = req.params;
     const { quantity, adjustment_reason } = req.body;
 
+    // Debug logging
+    console.log('Stock update request:', {
+      id,
+      quantity,
+      adjustment_reason,
+      body: req.body,
+      params: req.params
+    });
+
     if (quantity < 0) {
       return res.status(400).json({ error: 'Quantity cannot be negative' });
     }
@@ -122,6 +131,8 @@ export const updateStock = async (req, res) => {
       const productId = currentStock[0].product_id;
       const locationId = currentStock[0].location_id;
 
+      console.log('Current stock:', { oldQuantity, productId, locationId });
+
       // Update stock
       await connection.execute(
         'UPDATE stock SET quantity = ? WHERE id = ?',
@@ -132,20 +143,26 @@ export const updateStock = async (req, res) => {
       const movementType = quantity > oldQuantity ? 'in' : 'out';
       const movementQuantity = Math.abs(quantity - oldQuantity);
 
+      console.log('Creating stock movement:', { movementType, movementQuantity });
+
       await connection.execute(`
         INSERT INTO stock_movements 
         (product_id, location_id, movement_type, quantity, reference_type, reference_id, created_by)
         VALUES (?, ?, ?, ?, 'manual_adjustment', ?, ?)
-      `, [productId, locationId, movementType, movementQuantity, 0, req.user.id]);
+      `, [productId, locationId, movementType, movementQuantity, 0, req.user?.id || 1]);
     });
 
-    res.json({ message: 'Stock updated successfully' });
+    console.log('Stock updated successfully for ID:', id);
+    res.json({ 
+      message: 'Stock updated successfully',
+      updatedStock: { id, quantity, adjustment_reason }
+    });
   } catch (error) {
     console.error('Update stock error:', error);
     if (error.message === 'Stock record not found') {
       return res.status(404).json({ error: 'Stock record not found' });
     }
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Failed to update stock', details: error.message });
   }
 };
 

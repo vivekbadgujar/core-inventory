@@ -54,6 +54,20 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Debug endpoint to see what's being called
+app.get('/api', (req, res) => {
+  res.json({ 
+    message: 'API Base Endpoint',
+    availableEndpoints: [
+      '/api/health',
+      '/api/stock',
+      '/api/products',
+      '/api/receipts',
+      '/api/deliveries'
+    ]
+  });
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
