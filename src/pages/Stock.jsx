@@ -6,6 +6,7 @@ export default function Stock() {
   const [stock, setStock] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
 
   useEffect(() => {
     const fetchStock = async () => {
@@ -25,7 +26,10 @@ export default function Stock() {
 
   const updateStockQuantity = async (stockId, newQuantity) => {
     try {
-      await stockAPI.update(stockId, parseInt(newQuantity), 'Manual adjustment')
+      console.log('Updating stock:', { stockId, newQuantity });
+      
+      const result = await stockAPI.update(stockId, parseInt(newQuantity), 'Manual adjustment');
+      console.log('Stock update result:', result);
       
       // Update local state
       setStock(prev => 
@@ -34,10 +38,36 @@ export default function Stock() {
             ? { ...item, quantity: parseInt(newQuantity) }
             : item
         )
-      )
+      );
+      
+      // Show success message
+      setError(null);
+      setSuccess('Stock updated successfully!');
+      setTimeout(() => setSuccess(null), 3000); // Clear after 3 seconds
+      console.log('Stock updated successfully');
     } catch (error) {
-      console.error('Stock update error:', error)
-      setError('Failed to update stock')
+      console.error('Stock update error:', error);
+      setError(`Failed to update stock: ${error.message || error}`);
+      setSuccess(null);
+    }
+  }
+
+  const handleQuantityChange = (stockId, newQuantity) => {
+    // Update local state immediately for better UX
+    setStock(prev => 
+      prev.map(item => 
+        item.id === stockId 
+          ? { ...item, quantity: parseInt(newQuantity) || 0 }
+          : item
+      )
+    );
+  }
+
+  const handleQuantityBlur = (stockId, newQuantity) => {
+    // Only update if quantity is valid and different
+    const quantity = parseInt(newQuantity);
+    if (!isNaN(quantity) && quantity >= 0) {
+      updateStockQuantity(stockId, quantity);
     }
   }
 
@@ -88,7 +118,8 @@ export default function Stock() {
             min="0"
             className="field w-24 text-center"
             value={row.quantity}
-            onChange={(e) => updateStockQuantity(row.id, e.target.value)}
+            onChange={(e) => handleQuantityChange(row.id, e.target.value)}
+            onBlur={(e) => handleQuantityBlur(row.id, e.target.value)}
           />
           <span className="text-sm text-slate-400">{row.unit}</span>
         </div>
@@ -149,6 +180,18 @@ export default function Stock() {
         <h2 className="mt-2 text-3xl font-semibold text-white">Stock</h2>
         <p className="mt-2 text-sm text-slate-400">Real-time inventory levels across all locations. Edit quantities to make adjustments.</p>
       </div>
+
+      {success && (
+        <div className="panel p-4 bg-green-500/20 border border-green-500/50">
+          <p className="text-green-400">{success}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="panel p-4 bg-red-500/20 border border-red-500/50">
+          <p className="text-red-400">{error}</p>
+        </div>
+      )}
 
       <div className="panel p-5">
         <Table columns={columns} data={stock} />
